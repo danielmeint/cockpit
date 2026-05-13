@@ -52,7 +52,7 @@ def picker_cmd(query: str, limit: int, empty: bool):
         click.echo("No sessions found.", err=True)
         sys.exit(1)
 
-    preview_cmd = "python3 -m cockpit.preview {1}"
+    preview_cmd = "cockpit _preview {1}"
     reload_cmd = f"cockpit _fzf-reload --limit={limit}" + (" --empty" if empty else "")
     delete_cmd = "echo {} | cut -f1 | xargs -I% sh -c 'rm -rf ~/.copilot/session-state/% && echo Deleted %'"
 

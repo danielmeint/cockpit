@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import sys
 
+import click as _click
+
 from cockpit.store import STATE_DIR, get_session
 
 _BOLD = "\033[1m"
@@ -60,13 +62,13 @@ def get_last_messages(session_dir, count: int = 2, max_length: int = 300) -> lis
     return truncated
 
 
-def main():
-    if len(sys.argv) < 2:
-        return
-    sid = sys.argv[1]
-    session = get_session(sid)
+@_click.command(hidden=True)
+@_click.argument("session_id")
+def preview_cmd(session_id: str):
+    """Internal: render fzf preview for a session."""
+    session = get_session(session_id)
     if not session:
-        print(f"Session not found: {sid}")
+        print(f"Session not found: {session_id}")
         return
 
     # Header line
@@ -80,7 +82,7 @@ def main():
     if session.is_branch:
         print(f"{_DIM}Fork of: {session.branch_of}{_RESET}")
 
-    messages = get_last_messages(STATE_DIR / sid)
+    messages = get_last_messages(STATE_DIR / session_id)
     if messages:
         print(f"{_DIM}─── recent messages ───{_RESET}")
         for role, content in messages:
@@ -90,6 +92,12 @@ def main():
                 print(f"{_DIM}◂ {content}{_RESET}")
     else:
         print(f"{_DIM}(no messages){_RESET}")
+
+
+def main():
+    if len(sys.argv) < 2:
+        return
+    preview_cmd(sys.argv[1:])
 
 
 if __name__ == "__main__":

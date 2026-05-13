@@ -9,6 +9,7 @@ from cockpit.commands.picker import fzf_reload_cmd, picker_cmd
 from cockpit.commands.prune import prune_cmd
 from cockpit.commands.search import search_cmd
 from cockpit.commands.stats import stats_cmd
+from cockpit.preview import preview_cmd
 
 
 @click.group(invoke_without_command=True)
@@ -22,6 +23,7 @@ def cli(ctx: click.Context):
 cli.add_command(list_cmd, "list")
 cli.add_command(picker_cmd, "resume")
 cli.add_command(fzf_reload_cmd, "_fzf-reload")
+cli.add_command(preview_cmd, "_preview")
 cli.add_command(fork_cmd, "fork")
 cli.add_command(info_cmd, "info")
 cli.add_command(prune_cmd, "prune")
