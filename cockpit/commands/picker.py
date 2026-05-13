@@ -33,13 +33,14 @@ def picker_cmd(query: str, limit: int, empty: bool):
         sys.exit(1)
 
     fzf_input = "\n".join(_fzf_line(s) for s in sessions)
-    preview_cmd = f"python3 -m cockpit.preview {{1}}"
+    preview_cmd = "python3 -m cockpit.preview {1}"
 
     try:
         result = subprocess.run(
             [
                 "fzf",
-                "--query", query,
+                "--query",
+                query,
                 "--with-nth=3",
                 "--delimiter=\t",
                 "--ansi",

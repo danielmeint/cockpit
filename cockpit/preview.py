@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sys
 
-from cockpit.store import get_last_user_message, get_session, STATE_DIR
+from cockpit.store import STATE_DIR, get_last_user_message, get_session
 
 
 def format_size(b: int) -> str:
@@ -31,7 +31,7 @@ def main():
         print(f"Fork of: {session.branch_of}")
     last = get_last_user_message(STATE_DIR / sid)
     if last:
-        print(f"─── last message ───")
+        print("─── last message ───")
         print(last)
     else:
         print("(no messages)")
