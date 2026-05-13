@@ -10,14 +10,34 @@ import click
 
 from cockpit.store import collect_sessions, find_active_sessions
 
+# ANSI color helpers
+_BOLD = "\033[1m"
+_DIM = "\033[2m"
+_GREEN = "\033[32m"
+_YELLOW = "\033[33m"
+_CYAN = "\033[36m"
+_MAGENTA = "\033[35m"
+_RESET = "\033[0m"
+
 
 def _fzf_line(s) -> str:
-    dot = "● " if s.active else "  "
+    if s.active:
+        dot = f"{_GREEN}●{_RESET} "
+    else:
+        dot = "  "
     date = s.updated_at[:16].replace("T", " ") if s.updated_at else "?"
-    branch = " ⑂" if s.is_branch else ""
+    branch = f" {_MAGENTA}⑂{_RESET}" if s.is_branch else ""
     turns = f"[{s.turn_count}↻]"
-    display = f"{dot}{date}  {turns:>6}  {s.display_name}{branch}  │  {s.display_cwd}"
+    name = f"{_BOLD}{s.display_name}{_RESET}" if s.turn_count > 0 else f"{_DIM}{s.display_name}{_RESET}"
+    cwd = f"{_DIM}{s.display_cwd}{_RESET}"
+    display = f"{dot}{_DIM}{date}{_RESET}  {_CYAN}{turns:>6}{_RESET}  {name}{branch}  │  {cwd}"
     return f"{s.id}\t{s.cwd}\t{display}"
+
+
+def fzf_lines(limit: int = 50, include_empty: bool = False) -> str:
+    """Generate all fzf input lines. Also used by _fzf-reload."""
+    sessions = collect_sessions(limit=limit, include_empty=include_empty)
+    return "\n".join(_fzf_line(s) for s in sessions)
 
 
 @click.command()
@@ -26,14 +46,15 @@ def _fzf_line(s) -> str:
 @click.option("--empty", is_flag=True, help="Include sessions with 0 turns.")
 def picker_cmd(query: str, limit: int, empty: bool):
     """Interactive session picker (default command)."""
-    sessions = collect_sessions(limit=limit, include_empty=empty)
+    fzf_input = fzf_lines(limit=limit, include_empty=empty)
 
-    if not sessions:
+    if not fzf_input:
         click.echo("No sessions found.", err=True)
         sys.exit(1)
 
-    fzf_input = "\n".join(_fzf_line(s) for s in sessions)
     preview_cmd = "python3 -m cockpit.preview {1}"
+    reload_cmd = f"cockpit _fzf-reload --limit={limit}" + (" --empty" if empty else "")
+    delete_cmd = "echo {} | cut -f1 | xargs -I% sh -c 'rm -rf ~/.copilot/session-state/% && echo Deleted %'"
 
     try:
         result = subprocess.run(
@@ -45,12 +66,15 @@ def picker_cmd(query: str, limit: int, empty: bool):
                 "--delimiter=\t",
                 "--ansi",
                 "--reverse",
-                "--height=~40%",
+                "--height=~50%",
                 "--no-sort",
-                "--header=● = active  ⑂ = branch  [N↻] = turns  │  enter=resume  ctrl-y=copy ID",
+                "--header=enter=resume  ctrl-y=copy ID  ctrl-d=delete  ctrl-f=fork  ctrl-r=refresh",
                 f"--preview={preview_cmd}",
-                "--preview-window=down:4:wrap",
+                "--preview-window=down:6:wrap",
                 "--bind=ctrl-y:execute-silent(echo -n {1} | pbcopy)+abort",
+                f"--bind=ctrl-d:execute-silent({delete_cmd})+reload({reload_cmd})",
+                "--bind=ctrl-f:execute(cockpit fork {1})",
+                f"--bind=ctrl-r:reload({reload_cmd})",
             ],
             input=fzf_input,
             capture_output=True,
@@ -80,3 +104,11 @@ def picker_cmd(query: str, limit: int, empty: bool):
     click.echo(f"Resuming in {cwd} ...")
     os.chdir(cwd)
     os.execvp("copilot", ["copilot", f"--resume={sid}"])
+
+
+@click.command(hidden=True)
+@click.option("-n", "--limit", default=50)
+@click.option("--empty", is_flag=True)
+def fzf_reload_cmd(limit: int, empty: bool):
+    """Internal: regenerate fzf lines for reload binding."""
+    click.echo(fzf_lines(limit=limit, include_empty=empty))
