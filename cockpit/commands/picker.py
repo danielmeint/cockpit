@@ -8,6 +8,7 @@ import sys
 
 import click
 
+from cockpit.config import Config
 from cockpit.store import collect_sessions, find_active_sessions
 
 # ANSI color helpers
@@ -101,9 +102,11 @@ def picker_cmd(query: str, limit: int, empty: bool):
         click.echo(f"\n    cd {cwd} && copilot --resume={sid}")
         sys.exit(1)
 
+    cfg = Config.load()
+    args = ["copilot", *cfg.copilot_args, f"--resume={sid}"]
     click.echo(f"Resuming in {cwd} ...")
     os.chdir(cwd)
-    os.execvp("copilot", ["copilot", f"--resume={sid}"])
+    os.execvp("copilot", args)
 
 
 @click.command(hidden=True)

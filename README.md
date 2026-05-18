@@ -44,6 +44,15 @@ cockpit stats            # aggregate statistics
 | `ctrl-f` | Fork session                  |
 | `ctrl-r` | Refresh list                  |
 
+## Configuration
+
+Optional config file at `~/.config/cockpit/config.toml`:
+
+```toml
+# Extra arguments passed to `copilot` when resuming a session
+copilot_args = ["--yolo"]
+```
+
 ## Example output
 
 ```
